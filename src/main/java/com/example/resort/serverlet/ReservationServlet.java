@@ -1,22 +1,27 @@
 package com.example.resort.serverlet;
 
+import com.example.resort.dao.RoomDAO;
 import com.example.resort.model.Reservation;
 import com.example.resort.model.Room;
 import com.example.resort.model.User;
 import com.example.resort.service.ReservationService;
 import com.example.resort.service.RoomService;
+import com.google.gson.Gson;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
 
 @WebServlet("/reservation")
 public class ReservationServlet extends HttpServlet {
 
-    private final ReservationService reservationService = new ReservationService();
-    private final RoomService        roomService        = new RoomService();
+    private final ReservationService reservationService =
+            new ReservationService();
+    private final RoomService roomService = new RoomService();
+    private final RoomDAO     roomDAO     = new RoomDAO();
+    private final Gson        gson        = new Gson();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -28,26 +33,29 @@ public class ReservationServlet extends HttpServlet {
         switch (action) {
 
             case "add":
-                List<Room> availableRooms = roomService.getAvailableRooms();
-                req.setAttribute("availableRooms", availableRooms);
-                req.getRequestDispatcher("/WEB-INF/jsp/reservation_form.jsp")
-                        .forward(req, resp);
+                loadFormData(req);
+                req.getRequestDispatcher(
+                        "/WEB-INF/jsp/reservation_form.jsp").forward(req, resp);
                 break;
 
             case "view":
                 String resNo = req.getParameter("resNo");
-                Reservation res = reservationService.getByReservationNo(resNo);
+                Reservation res =
+                        reservationService.getByReservationNo(resNo);
                 req.setAttribute("reservation", res);
-                req.getRequestDispatcher("/WEB-INF/jsp/reservation_detail.jsp")
-                        .forward(req, resp);
+                req.getRequestDispatcher(
+                        "/WEB-INF/jsp/reservation_detail.jsp").forward(req, resp);
                 break;
 
             case "cancel":
-                int cancelId = Integer.parseInt(req.getParameter("id"));
-                String result = reservationService.cancelReservation(cancelId);
+                int cancelId =
+                        Integer.parseInt(req.getParameter("id"));
+                String result =
+                        reservationService.cancelReservation(cancelId);
                 if ("success".equals(result)) {
                     resp.sendRedirect(req.getContextPath() +
-                            "/reservation?action=list&success=Reservation cancelled.");
+                            "/reservation?action=list" +
+                            "&success=Reservation cancelled successfully.");
                 } else {
                     resp.sendRedirect(req.getContextPath() +
                             "/reservation?action=list&error=" + result);
@@ -55,12 +63,13 @@ public class ReservationServlet extends HttpServlet {
                 break;
 
             default:
-                List<Reservation> all = reservationService.getAllReservations();
+                List<Reservation> all =
+                        reservationService.getAllReservations();
                 req.setAttribute("reservations", all);
                 req.setAttribute("successMsg", req.getParameter("success"));
                 req.setAttribute("errorMsg",   req.getParameter("error"));
-                req.getRequestDispatcher("/WEB-INF/jsp/reservations.jsp")
-                        .forward(req, resp);
+                req.getRequestDispatcher(
+                        "/WEB-INF/jsp/reservations.jsp").forward(req, resp);
         }
     }
 
@@ -68,7 +77,8 @@ public class ReservationServlet extends HttpServlet {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        User loggedInUser = (User) req.getSession().getAttribute("loggedInUser");
+        User loggedInUser = (User) req.getSession()
+                .getAttribute("loggedInUser");
 
         String guestName       = req.getParameter("guestName");
         String address         = req.getParameter("address");
@@ -96,10 +106,8 @@ public class ReservationServlet extends HttpServlet {
                     "/reservation?action=view&resNo=" + newResNo +
                     "&success=Reservation created successfully!");
         } else {
-            // Return to form with error
-            req.setAttribute("errorMessage", outcome);
-            req.setAttribute("availableRooms", roomService.getAvailableRooms());
-            // Keep form values
+            // Return to form keeping all values
+            req.setAttribute("errorMessage",    outcome);
             req.setAttribute("guestName",       guestName);
             req.setAttribute("address",         address);
             req.setAttribute("contactNo",       contactNo);
@@ -109,8 +117,25 @@ public class ReservationServlet extends HttpServlet {
             req.setAttribute("checkOutDate",    checkOut);
             req.setAttribute("specialRequests", specialRequests);
             req.setAttribute("selectedRoomId",  roomId);
-            req.getRequestDispatcher("/WEB-INF/jsp/reservation_form.jsp")
-                    .forward(req, resp);
+            loadFormData(req);
+            req.getRequestDispatcher(
+                    "/WEB-INF/jsp/reservation_form.jsp").forward(req, resp);
         }
+    }
+
+    // ✅ Helper: loads rooms + booked dates map for the form
+    private void loadFormData(HttpServletRequest req) {
+        List<Room> allRooms = roomService.getAvailableRooms();
+        req.setAttribute("availableRooms", allRooms);
+
+        // Build map: roomId -> list of [checkIn, checkOut] strings
+        Map<Integer, List<String[]>> bookedDatesMap = new HashMap<>();
+        for (Room r : allRooms) {
+            List<String[]> booked =
+                    roomDAO.getBookedDatesForRoom(r.getRoomId());
+            bookedDatesMap.put(r.getRoomId(), booked);
+        }
+        req.setAttribute("bookedDatesJson",
+                gson.toJson(bookedDatesMap));
     }
 }

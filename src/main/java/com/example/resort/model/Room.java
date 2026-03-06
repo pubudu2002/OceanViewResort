@@ -1,6 +1,5 @@
 package com.example.resort.model;
 
-
 public class Room {
     private int roomId;
     private String roomNumber;
@@ -9,22 +8,24 @@ public class Room {
     private int capacity;
     private String description;
     private String status;
+    private String imagePath; // ✅ NEW
 
     public Room() {}
 
     public Room(int roomId, String roomNumber, String roomType,
                 double pricePerNight, int capacity,
-                String description, String status) {
-        this.roomId       = roomId;
-        this.roomNumber   = roomNumber;
-        this.roomType     = roomType;
+                String description, String status, String imagePath) {
+        this.roomId        = roomId;
+        this.roomNumber    = roomNumber;
+        this.roomType      = roomType;
         this.pricePerNight = pricePerNight;
-        this.capacity     = capacity;
-        this.description  = description;
-        this.status       = status;
+        this.capacity      = capacity;
+        this.description   = description;
+        this.status        = status;
+        this.imagePath     = imagePath; // ✅ NEW
     }
 
-    // Getters & Setters
+    // Existing getters/setters stay the same...
     public int getRoomId()                { return roomId; }
     public void setRoomId(int roomId)     { this.roomId = roomId; }
 
@@ -45,4 +46,8 @@ public class Room {
 
     public String getStatus()              { return status; }
     public void setStatus(String status)   { this.status = status; }
+
+    // ✅ NEW
+    public String getImagePath()                   { return imagePath; }
+    public void setImagePath(String imagePath)     { this.imagePath = imagePath; }
 }

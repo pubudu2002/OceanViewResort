@@ -29,7 +29,6 @@ public class ReservationService {
         return reservationDAO.getById(id);
     }
 
-    // Generate reservation number e.g. RES-2025-0004
     public String generateReservationNo() {
         int year = LocalDate.now().getYear();
         String last = reservationDAO.getLastReservationNo();
@@ -43,14 +42,13 @@ public class ReservationService {
         return String.format("RES-%d-%04d", year, nextNum);
     }
 
-    // Main method to create a reservation
     public String createReservation(
             String guestName, String address, String contactNo,
             String email, String nic,
             int roomId, String checkInStr, String checkOutStr,
             String specialRequests, int createdBy) {
 
-        // --- Validate inputs ---
+        // Validate inputs
         if (guestName == null || guestName.trim().isEmpty())
             return "Guest name is required.";
         if (address == null || address.trim().isEmpty())
@@ -62,7 +60,7 @@ public class ReservationService {
         if (roomId <= 0)
             return "Please select a room.";
 
-        // --- Parse dates ---
+        // Parse dates
         LocalDate checkIn, checkOut;
         try {
             checkIn  = LocalDate.parse(checkInStr);
@@ -76,35 +74,42 @@ public class ReservationService {
         if (checkIn.isBefore(LocalDate.now()))
             return "Check-in date cannot be in the past.";
 
-        // --- Check room availability ---
+        // Check room exists
         Room room = roomDAO.getRoomById(roomId);
         if (room == null)
             return "Selected room does not exist.";
-        if (!"AVAILABLE".equals(room.getStatus()))
-            return "Room " + room.getRoomNumber() + " is not available.";
+
+        // Only block MAINTENANCE rooms
+        if ("MAINTENANCE".equals(room.getStatus()))
+            return "Room " + room.getRoomNumber() +
+                    " is currently under maintenance.";
+
+        // ✅ Check date conflicts only
         if (reservationDAO.isRoomBooked(roomId, checkIn, checkOut, 0))
             return "Room " + room.getRoomNumber() +
-                    " is already booked for the selected dates.";
+                    " is already booked from " + checkInStr +
+                    " to " + checkOutStr +
+                    ". Please choose different dates.";
 
-        // --- Calculate cost ---
+        // Calculate cost
         long nights = ChronoUnit.DAYS.between(checkIn, checkOut);
         double total = nights * room.getPricePerNight();
 
-        // --- Save or find guest ---
+        // Save or find guest by NIC
         Guest guest = null;
         if (nic != null && !nic.trim().isEmpty()) {
             guest = guestDAO.findByNic(nic.trim());
         }
         if (guest == null) {
-            Guest newGuest = new Guest(0, guestName.trim(), address.trim(),
-                    contactNo.trim(), email, nic);
+            Guest newGuest = new Guest(0, guestName.trim(),
+                    address.trim(), contactNo.trim(), email, nic);
             int guestId = guestDAO.addGuest(newGuest);
             if (guestId == -1) return "Failed to save guest details.";
             newGuest.setGuestId(guestId);
             guest = newGuest;
         }
 
-        // --- Build reservation ---
+        // Build and save reservation
         Reservation res = new Reservation();
         res.setReservationNo(generateReservationNo());
         res.setGuestId(guest.getGuestId());
@@ -118,10 +123,10 @@ public class ReservationService {
         res.setCreatedBy(createdBy);
 
         boolean saved = reservationDAO.save(res);
-        if (!saved) return "Failed to save reservation. Please try again.";
+        if (!saved) return "Failed to save reservation.";
 
-        // Update room status to OCCUPIED
-        roomDAO.updateRoomStatus(roomId, "OCCUPIED");
+        // ✅ REMOVED: do NOT change room status to OCCUPIED
+        // Room availability is now purely date-based
 
         return "success:" + res.getReservationNo();
     }
@@ -132,9 +137,12 @@ public class ReservationService {
         if ("CANCELLED".equals(res.getStatus()))
             return "Reservation is already cancelled.";
 
-        boolean updated = reservationDAO.updateStatus(reservationId, "CANCELLED");
+        boolean updated = reservationDAO.updateStatus(
+                reservationId, "CANCELLED");
+
         if (updated) {
-            roomDAO.updateRoomStatus(res.getRoomId(), "AVAILABLE");
+            // ✅ REMOVED: do NOT change room status back to AVAILABLE
+            // Room availability is now purely date-based
             return "success";
         }
         return "Failed to cancel reservation.";
