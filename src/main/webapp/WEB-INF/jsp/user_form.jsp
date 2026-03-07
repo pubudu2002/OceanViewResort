@@ -15,6 +15,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %> — Ocean View Resort</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -31,7 +32,7 @@
     .navbar a { color: #BBDEFB; text-decoration: none; margin-left: 18px; font-size: 13px; font-weight: 500; transition: color 0.2s; }
     .navbar a:hover { color: white; }
 
-    .container { padding: 30px 20px; max-width: 540px; animation: fadeUp 0.5s ease; }
+    .container { padding: 30px 20px; max-width: 540px; margin: 0 auto; animation: fadeUp 0.5s ease; }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(16px); }
@@ -84,6 +85,7 @@
       border: 2px solid #E3F2FD; border-radius: 10px;
       padding: 14px; text-align: center; cursor: pointer;
       transition: border-color 0.2s, background 0.2s;
+      height: 100%; display: block;
     }
     .role-label:hover { border-color: #1565C0; background: #F0F8FF; }
     .role-label .role-icon { font-size: 24px; margin-bottom: 6px; }
@@ -102,11 +104,44 @@
       font-family: 'Poppins', sans-serif;
       border: none; cursor: pointer; text-decoration: none;
       display: inline-block; transition: transform 0.2s, opacity 0.2s;
+      text-align: center;
     }
     .btn:hover { transform: translateY(-1px); opacity: 0.92; }
-    .btn:active { transform: translateY(0); }
     .btn-primary   { background: linear-gradient(135deg, #1565C0, #1976D2); color: white; box-shadow: 0 3px 10px rgba(21,101,192,0.28); }
     .btn-secondary { background: #ECEFF1; color: #555; }
+
+    /* --- RESPONSIVE MEDIA QUERIES --- */
+    @media (max-width: 600px) {
+      .navbar {
+        flex-direction: column;
+        padding: 15px;
+        text-align: center;
+      }
+      .navbar h2 { margin-bottom: 10px; }
+      .navbar div { display: flex; gap: 10px; }
+      .navbar a { margin-left: 0; font-size: 12px; }
+
+      .container {
+        padding: 15px;
+        max-width: 100%;
+      }
+
+      .card {
+        padding: 20px;
+      }
+
+      .role-grid {
+        grid-template-columns: 1fr; /* Stack roles vertically on mobile */
+      }
+
+      .btn-group {
+        flex-direction: column; /* Stack buttons vertically */
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
