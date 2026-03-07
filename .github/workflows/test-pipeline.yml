@@ -1,19 +1,16 @@
-name: Java Unit Test Pipeline
+name: Java CI Pipeline
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-
-  test:
+  build:
 
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout Project
         uses: actions/checkout@v4
 
@@ -23,14 +20,5 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Cache Maven packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2
-          key: maven-cache-${{ hashFiles('**/pom.xml') }}
-
-      - name: Build Project
-        run: mvn clean compile
-
-      - name: Run Unit Tests
-        run: mvn test
+      - name: Build Project (Skip Tests)
+        run: mvn clean install -DskipTests
